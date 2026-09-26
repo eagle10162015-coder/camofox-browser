@@ -9,7 +9,6 @@ import type { ChildProcess } from "child_process";
 import type { OpenClawPluginApi, OpenClawPluginToolContext } from "openclaw/plugin-sdk/core";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { randomUUID } from "crypto";
 
 import { loadConfig } from "./lib/config.js";
 import { launchServer } from "./lib/launcher.js";
@@ -130,7 +129,7 @@ export default function register(api: OpenClawPluginApi) {
   const baseUrl = cfg.url || `http://localhost:${port}`;
   const autoStart = cfg.autoStart !== false; // default true
   const pluginDir = getPluginDir();
-  const fallbackUserId = `camofox-${randomUUID()}`;
+  const sharedUserId = process.env.CAMOFOX_USER_ID || 'personal';
 
   // Auto-start server if configured (default: true)
   if (autoStart) {
@@ -160,7 +159,7 @@ export default function register(api: OpenClawPluginApi) {
       description: def.description,
       parameters: def.inputSchema,
       async execute(_id, params) {
-        const userId = ctx.agentId || fallbackUserId;
+        const userId = sharedUserId;
         const cfg = loadConfig();
         const { spec, payload } = await runTool(
           def.name,

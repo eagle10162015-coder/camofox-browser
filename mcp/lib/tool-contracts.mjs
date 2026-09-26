@@ -83,7 +83,7 @@ export const TOOL_DEFS = [
   {
     name: 'camofox_snapshot',
     description:
-      'Get accessibility snapshot of a Camoufox page with element refs (e1, e2, etc.) for interaction, plus a visual screenshot. ' +
+      'Get accessibility snapshot of a Camoufox page with element refs (e1, e2, etc.) for interaction. ' +
       'Large pages are truncated with pagination links preserved at the bottom. ' +
       'If the response includes hasMore=true and nextOffset, call again with that offset to see more content.',
     inputSchema: {
@@ -220,6 +220,42 @@ export const TOOL_DEFS = [
       required: ['cookiesPath'],
     },
   },
+  {
+    name: 'camofox_accounts_for_tab',
+    description: 'List imported account labels for the exact origin of a live tab. Passwords are not returned.',
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: { type: 'string' } },
+      required: ['tabId'],
+    },
+  },
+  {
+    name: 'camofox_fill_account',
+    description: 'Fill one field from an imported account directly into a live tab; password never appears in the tool result.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: { type: 'string' },
+        accountId: { type: 'string' },
+        fieldKind: { type: 'string', enum: ['username', 'password'] },
+        selector: { type: 'string', description: 'CSS selector for the login field' },
+      },
+      required: ['tabId', 'accountId', 'fieldKind', 'selector'],
+    },
+  },
+  {
+    name: 'camofox_autofill_account',
+    description: 'Fill a selected imported account in a common login form without a screenshot or selector. Supports username-first forms by calling again after the next page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: { type: 'string' },
+        accountId: { type: 'string' },
+        submit: { type: 'boolean' },
+      },
+      required: ['tabId', 'accountId'],
+    },
+  },
 ];
 
 /** Quick name → def lookup. */
@@ -262,7 +298,7 @@ export function buildRequest(name, args, ctx) {
         body: { url: args.url, userId, sessionKey },
       };
     case 'camofox_snapshot': {
-      const params = new URLSearchParams({ userId, includeScreenshot: 'true' });
+      const params = new URLSearchParams({ userId, includeScreenshot: 'false' });
       if (args.offset != null && args.offset !== '') params.set('offset', String(args.offset));
       return {
         method: 'GET',
@@ -331,6 +367,29 @@ export function buildRequest(name, args, ctx) {
         path: `/tabs?${new URLSearchParams({ userId })}`,
         auth: 'accessKey',
         responseKind: 'json',
+      };
+    case 'camofox_accounts_for_tab':
+      return {
+        method: 'GET',
+        path: `/accounts?${new URLSearchParams({ userId, tabId: args.tabId })}`,
+        auth: 'accessKey',
+        responseKind: 'json',
+      };
+    case 'camofox_fill_account':
+      return {
+        method: 'POST',
+        path: `/tabs/${encodeURIComponent(args.tabId)}/fill-account`,
+        auth: 'accessKey',
+        responseKind: 'json',
+        body: { userId, accountId: args.accountId, fieldKind: args.fieldKind, selector: args.selector },
+      };
+    case 'camofox_autofill_account':
+      return {
+        method: 'POST',
+        path: `/tabs/${encodeURIComponent(args.tabId)}/autofill-account`,
+        auth: 'accessKey',
+        responseKind: 'json',
+        body: { userId, accountId: args.accountId, submit: args.submit === true },
       };
     case 'camofox_import_cookies':
       // Async (Netscape parse + path check) — caller must use buildCookieRequest().

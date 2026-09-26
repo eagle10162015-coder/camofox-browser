@@ -18,7 +18,6 @@
 //   - CAMOFOX_API_KEY (cookie import): forwarded as `Authorization: Bearer` on
 //     the cookie-import route only.
 
-import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
@@ -45,9 +44,10 @@ const VERSION = JSON.parse(
 const CONFIG = loadMcpConfig();
 const BASE_URL = process.env.CAMOFOX_BASE_URL || `http://localhost:${CONFIG.port}`;
 
-// Per-MCP-server userId so each host session gets an isolated camofox session
-// (cookie/storage partition). Falls back to a random id.
-const USER_ID = process.env.CAMOFOX_USER_ID || `mcp-${randomUUID()}`;
+// Stable userId is essential: persistence hashes it to pick the on-disk
+// account profile. A random id here silently creates a fresh login on restart.
+// Set CAMOFOX_USER_ID to isolate a second person's/browser identity.
+const USER_ID = process.env.CAMOFOX_USER_ID || 'personal';
 // sessionKey partitions tabs within a user (matches plugin.ts fallback "default").
 const SESSION_KEY = process.env.CAMOFOX_SESSION_KEY || "default";
 

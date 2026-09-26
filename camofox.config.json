@@ -3,10 +3,11 @@
   "name": "Camofox Browser",
   "version": "1.6.0",
   "newPageTimeoutMs": 10000,
-  "interactive": { "mode": "off" },
+  "interactive": { "mode": "desktop" },
   "plugins": {
     "youtube": { "enabled": true },
     "persistence": { "enabled": true },
+    "account-vault": { "enabled": true },
     "vnc": { "enabled": false, "resolution": "1920x1080" }
   }
 }
