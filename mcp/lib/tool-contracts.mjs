@@ -271,6 +271,15 @@ export const TOOL_DEFS = [
       required: ['tabId', 'username', 'password'],
     },
   },
+  {
+    name: 'camofox_fingerprint_health',
+    description: 'Check basic automation and window signals in a live tab without screenshots. This does not predict every site verdict.',
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: { type: 'string' } },
+      required: ['tabId'],
+    },
+  },
 ];
 
 /** Quick name → def lookup. */
@@ -413,6 +422,24 @@ export function buildRequest(name, args, ctx) {
         auth: 'accessKey',
         responseKind: 'json',
         body: { userId, username: args.username, password: args.password, accountId: args.accountId || '', name: args.name || '' },
+      };
+    case 'camofox_fingerprint_health':
+      return {
+        method: 'POST',
+        path: `/tabs/${encodeURIComponent(args.tabId)}/evaluate`,
+        auth: 'accessKey',
+        responseKind: 'json',
+        body: {
+          userId,
+          expression: `(() => {
+            const webdriver = navigator.webdriver === true;
+            const headlessUA = /Headless/i.test(navigator.userAgent);
+            const plugins = navigator.plugins.length;
+            const geometryValid = outerWidth >= innerWidth && outerHeight >= innerHeight;
+            return { webdriver, headlessUA, plugins, geometryValid,
+              basicSignalsPass: !webdriver && !headlessUA && plugins > 0 && geometryValid };
+          })()`,
+        },
       };
     case 'camofox_import_cookies':
       // Async (Netscape parse + path check) — caller must use buildCookieRequest().

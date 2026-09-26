@@ -2,7 +2,8 @@
 
 This fork adds an `account-vault` plugin. It lists account labels for the exact
 origin of a live tab and fills a selected username or password field directly.
-Passwords do not appear in REST or MCP responses.
+Account lookup and fill responses do not contain passwords. Agents with access
+to arbitrary page evaluation can inspect values already entered into a page.
 
 Install the Wraith fork in the same environment and import one or more Google
 Password Manager CSV files:
@@ -33,3 +34,7 @@ which reduces loss from an abrupt browser exit. An isolated session value was
 verified to survive a forced server restart on Windows.
 
 The upstream MIT license and copyright notice remain in `LICENSE`.
+
+`camofox_fingerprint_health` checks a few local browser signals in a live tab
+without a screenshot. Its result is diagnostic and cannot guarantee acceptance
+by a site.
