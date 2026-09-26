@@ -256,6 +256,21 @@ export const TOOL_DEFS = [
       required: ['tabId', 'accountId'],
     },
   },
+  {
+    name: 'camofox_save_account',
+    description: 'Save a newly created or rotated password for the live tab origin in the encrypted local vault.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: { type: 'string' },
+        username: { type: 'string' },
+        password: { type: 'string' },
+        accountId: { type: 'string', description: 'Existing account ID when rotating its password' },
+        name: { type: 'string' },
+      },
+      required: ['tabId', 'username', 'password'],
+    },
+  },
 ];
 
 /** Quick name → def lookup. */
@@ -390,6 +405,14 @@ export function buildRequest(name, args, ctx) {
         auth: 'accessKey',
         responseKind: 'json',
         body: { userId, accountId: args.accountId, submit: args.submit === true },
+      };
+    case 'camofox_save_account':
+      return {
+        method: 'POST',
+        path: `/tabs/${encodeURIComponent(args.tabId)}/save-account`,
+        auth: 'accessKey',
+        responseKind: 'json',
+        body: { userId, username: args.username, password: args.password, accountId: args.accountId || '', name: args.name || '' },
       };
     case 'camofox_import_cookies':
       // Async (Netscape parse + path check) — caller must use buildCookieRequest().

@@ -1,5 +1,5 @@
 /** Import account metadata and fill credentials without returning passwords to agents. */
-import { vaultCommand } from './vault-client.js';
+import { vaultCommand, vaultInput } from './vault-client.js';
 
 function currentTab(sessions, normalizeUserId, userId, tabId) {
   const session = sessions.get(normalizeUserId(userId));
@@ -103,6 +103,24 @@ export async function register(app, ctx) {
       return res.json({ ok: true, origin, filled, submitted });
     } catch {
       return res.status(503).json({ error: 'Account autofill failed' });
+    }
+  });
+
+  app.post('/tabs/:tabId/save-account', ctx.auth(), async (req, res) => {
+    const { userId, username, password, accountId = '', name = '' } = req.body || {};
+    if (!userId || !username || !password) {
+      return res.status(400).json({ error: 'userId, username and password are required' });
+    }
+    const tab = currentTab(sessions, normalizeUserId, userId, req.params.tabId);
+    if (!tab) return res.status(404).json({ error: 'Tab not found' });
+    try {
+      const account = JSON.parse(await vaultInput(['_upsert_json'], {
+        url: new URL(tab.page.url()).origin, username, password,
+        name, account_id: accountId, source: 'agent',
+      }));
+      return res.json({ ok: true, account });
+    } catch {
+      return res.status(503).json({ error: 'Account save failed' });
     }
   });
 }

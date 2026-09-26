@@ -15,6 +15,9 @@ Set `WRAITH_PYTHON` when Python is not on PATH. The plugin provides
 `GET /accounts?userId=...&tabId=...` and
 `POST /tabs/:tabId/fill-account`. The MCP adapter provides
 `camofox_accounts_for_tab` and `camofox_fill_account`.
+`camofox_autofill_account` fills common login forms without a screenshot, and
+`camofox_save_account` records a new or rotated password. Supply the existing
+account ID when rotating a password imported from Google.
 
 The MCP adapter now defaults to the stable user ID `personal`, allowing the
 persistence plugin to find the same profile after a restart. Override it with
