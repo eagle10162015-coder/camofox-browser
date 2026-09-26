@@ -28,5 +28,8 @@ by default.
 same Camoufox window is visible and usable by a person on the Windows desktop.
 The persistence plugin also checkpoints IndexedDB with cookies and localStorage
 for sites that keep session material there.
+It checkpoints after navigation and every 30 seconds while a session is active,
+which reduces loss from an abrupt browser exit. An isolated session value was
+verified to survive a forced server restart on Windows.
 
 The upstream MIT license and copyright notice remain in `LICENSE`.

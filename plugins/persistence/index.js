@@ -72,6 +72,7 @@ export async function register(app, ctx, pluginConfig = {}) {
   const activeSessions = new Map(); // userId -> context
   const checkpointPromises = new Map(); // userId -> latest queued checkpoint
   const resettingUsers = new Set();
+  const navigationTimers = new Map();
 
   /**
    * Checkpoint storage state to disk for a userId.
@@ -135,6 +136,29 @@ export async function register(app, ctx, pluginConfig = {}) {
     }
   });
 
+  // Login redirects often set the durable cookie before a session is closed.
+  // Checkpoint shortly after navigation so an unclean browser exit does not
+  // discard the newly authenticated state.
+  events.on('tab:navigated', ({ userId }) => {
+    const pending = navigationTimers.get(userId);
+    if (pending) clearTimeout(pending);
+    const timer = setTimeout(() => {
+      navigationTimers.delete(userId);
+      const context = activeSessions.get(userId);
+      if (context) checkpoint(userId, context, 'navigation').catch(() => {});
+    }, 2500);
+    timer.unref?.();
+    navigationTimers.set(userId, timer);
+  });
+
+  // AJAX logins may not navigate. Refresh the checkpoint while sessions live.
+  const periodicCheckpoint = setInterval(() => {
+    for (const [userId, context] of activeSessions) {
+      checkpoint(userId, context, 'periodic').catch(() => {});
+    }
+  }, 30000);
+  periodicCheckpoint.unref?.();
+
   // On cookie import: checkpoint
   events.on('session:cookies:import', async ({ userId }) => {
     const context = activeSessions.get(userId);
@@ -153,6 +177,9 @@ export async function register(app, ctx, pluginConfig = {}) {
 
   // On session destroying (pre-close): checkpoint while context is still alive
   events.on('session:destroying', async ({ userId, reason }) => {
+    const timer = navigationTimers.get(userId);
+    if (timer) clearTimeout(timer);
+    navigationTimers.delete(userId);
     const context = activeSessions.get(userId);
     if (context) {
       if (reason !== 'storage_reset') {
@@ -164,11 +191,17 @@ export async function register(app, ctx, pluginConfig = {}) {
 
   // On session destroyed (post-close): cleanup tracking if not already done
   events.on('session:destroyed', async ({ userId }) => {
+    const timer = navigationTimers.get(userId);
+    if (timer) clearTimeout(timer);
+    navigationTimers.delete(userId);
     activeSessions.delete(userId);
   });
 
   // On shutdown: checkpoint all remaining sessions
   events.on('server:shutdown', async () => {
+    clearInterval(periodicCheckpoint);
+    for (const timer of navigationTimers.values()) clearTimeout(timer);
+    navigationTimers.clear();
     for (const [userId, context] of activeSessions) {
       await checkpoint(userId, context, 'shutdown').catch(() => {});
     }
