@@ -6,7 +6,7 @@
   "interactive": { "mode": "desktop" },
   "plugins": {
     "youtube": { "enabled": true },
-    "persistence": { "enabled": true },
+    "persistence": { "enabled": true, "indexedDB": true },
     "account-vault": { "enabled": true },
     "vnc": { "enabled": false, "resolution": "1920x1080" }
   }

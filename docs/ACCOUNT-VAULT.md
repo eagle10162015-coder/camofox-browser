@@ -23,5 +23,7 @@ by default.
 
 `camofox.config.json` uses `interactive.mode=desktop` in this fork, so the
 same Camoufox window is visible and usable by a person on the Windows desktop.
+The persistence plugin also checkpoints IndexedDB with cookies and localStorage
+for sites that keep session material there.
 
 The upstream MIT license and copyright notice remain in `LICENSE`.
