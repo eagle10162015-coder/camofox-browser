@@ -38,3 +38,10 @@ The upstream MIT license and copyright notice remain in `LICENSE`.
 `camofox_fingerprint_health` checks a few local browser signals in a live tab
 without a screenshot. Its result is diagnostic and cannot guarantee acceptance
 by a site.
+
+For direct connections, the browser also saves its generated Camoufox identity
+in the profile directory and restores it after server restarts. A browser binary
+version change generates a new identity. Proxy sessions continue to use their
+normal per-launch identity and location handling. Direct mode disables
+Camoufox's separate per-process canvas export randomization because that
+changed canvas output across restarts even with the same saved `canvas:seed`.

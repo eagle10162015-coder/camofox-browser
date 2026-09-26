@@ -10,6 +10,7 @@ import { getSearchFallbacks } from './lib/search-fallbacks.js';
 import { hasGoogleOrganicResults } from './lib/google-serp.js';
 import { loadConfig } from './lib/config.js';
 import { contextIdentityOptions, launchLocale } from './lib/browser-identity.js';
+import { loadStableIdentity, saveStableIdentity } from './lib/stable-identity.js';
 import { normalizePlaywrightProxy, createProxyPool, buildProxyUrl } from './lib/proxy.js';
 import { createFlyHelpers } from './lib/fly.js';
 import { createPluginEvents, loadPlugins, typeEventPayload } from './lib/plugins.js';
@@ -1168,8 +1169,18 @@ async function launchBrowserInstance() {
           excludeAddons: ['UBO'],
         });
       }
+      const stableIdentity = !proxyPool
+        ? loadStableIdentity(CONFIG.profileDir, externalCamoufox?.executablePath)
+        : null;
       const options = await buildLaunchOptionsWithGeoipFallback({
         executable_path: externalCamoufox?.executablePath,
+        config: stableIdentity || undefined,
+        // In the current Camoufox binary, exported canvas images still vary
+        // by process despite a pinned canvas:seed. A persistent account needs
+        // the same canvas output after restart; keep the seeded font metrics.
+        firefox_user_prefs: !proxyPool
+          ? { 'privacy.baselineFingerprintingProtection': false }
+          : undefined,
         headless: useVirtualDisplay ? false : !useDesktopWindow,
         os: hostOS,
         humanize: true,
@@ -1197,6 +1208,9 @@ async function launchBrowserInstance() {
       await pluginEvents.emitAsync('browser:launching', { options });
 
       candidateBrowser = await firefox.launch(options);
+      if (!proxyPool && !stableIdentity) {
+        saveStableIdentity(CONFIG.profileDir, options.executablePath, options.env);
+      }
 
       if (proxyPool?.canRotateSessions) {
         const probe = await probeGoogleSearch(candidateBrowser);
